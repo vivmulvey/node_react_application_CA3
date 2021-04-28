@@ -13,6 +13,7 @@ const login = async function(req, res, next) {
         else if (user !== null) {
             const isValid = passwordVerify(req.body.password, user.hash, user.salt);       
             if (isValid) {
+                //Getting the token from JWT
                 const tokenObject = issueJWT(user);
                 res.status(200).json({ 
                     success: true, 
@@ -21,6 +22,7 @@ const login = async function(req, res, next) {
                         username: user.username
 
                     }, 
+                    //inside the token object we have aa token
                     token: tokenObject.token, 
                     expiresIn: tokenObject.expires 
                 });
@@ -88,4 +90,5 @@ const logout = function(req, res){
     });
 };
 
+//makes these methods globally accessable
 export { login, register, logout };

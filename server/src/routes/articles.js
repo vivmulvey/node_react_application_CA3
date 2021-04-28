@@ -7,12 +7,16 @@ import {
     validateArticleUpdate 
 } from '../middleware/validation/article.js';
 
+//
 import { 
     index, 
     show, 
     store,
     update,
-    remove
+    remove,
+    removeComment,
+    updateComment,
+    storeComment
 } from '../controllers/articleController.js'
 
 const articlesRouter = Router();   
@@ -39,5 +43,22 @@ articlesRouter.delete('/:id',
     validateArticleId, 
     remove
 );
+
+//Comments routes
+articlesRouter.post(
+    "/:id/comments",
+    passport.authenticate("jwt", { session: false }),
+    storeComment
+  );
+  articlesRouter.put(
+    "/:articleId/comments/:commentId",
+    passport.authenticate("jwt", { session: false }),
+    updateComment
+  );
+  articlesRouter.delete(
+    "/:articleId/comments/:commentId",
+    passport.authenticate("jwt", { session: false }),
+    removeComment
+  );
 
 export default articlesRouter;

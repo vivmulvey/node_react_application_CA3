@@ -13,7 +13,7 @@ const Login = () => {
     let history = useHistory();
 
     const initialState = {
-        username: "Bruce16",
+        username: "test",
         password: "secret",
         remember: false,
         isSubmitting: false,

@@ -5,11 +5,12 @@ import { dbConfig } from './lib/config.js';
 
 const debug = createDebug('rest-api:debug');
 
-const dbString = 
-    'mongodb://' + 
-    dbConfig.host + ':' + 
-    dbConfig.port + '/' + 
-    dbConfig.database;
+const dbString = process.env.MONGO_DB_CONNECT;
+    // 'mongodb://' + 
+    // dbConfig.host + ':' + 
+    // dbConfig.port + '/' + 
+    // dbConfig.database;
+
 
 const dbOptions = {
     useNewUrlParser: true,

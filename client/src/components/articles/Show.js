@@ -1,9 +1,11 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 import { Link, useParams, useRouteMatch } from 'react-router-dom';
-import { Nav, Navbar } from 'react-bootstrap';
+import { Nav, Navbar , Button , Form , Alert } from 'react-bootstrap';
 import { AuthContext } from '../../App';
 import DeleteModal from './DeleteModal';
+import  EditCommentModal  from "./comments/EditCommentModal";
+import  DeleteCommentModal  from "./comments/DeleteCommentModal";
 
 const initialState = {
     article: null,
@@ -11,6 +13,7 @@ const initialState = {
     hasError: false
 };
 
+//Reducer makes things globally available within/outside a component
 const reducer = (state, action) => {
     console.log(action);
     switch (action.type) {
@@ -23,6 +26,7 @@ const reducer = (state, action) => {
         }
         case "FETCH_ARTICLE_SUCCESS": {
             return {
+                //... = getting the previous state 
                 ...state,
                 isFetching: false,
                 article: action.payload
@@ -35,10 +39,62 @@ const reducer = (state, action) => {
                 hasError: true
             };
         }
-        default: {
+
+        case "POST_COMMENT_REQUEST": {
+            return {
+              ...state,
+              isPosting: true,
+              errorMessage: null,
+            };
+          }
+          case "POST_COMMENT_SUCCESS": {
+            const article = state.article;
+            const comment = action.payload;
+            if (!article.comments.some((c) => comment._id === c._id)) {
+              article.comments.push(comment);
+            }
+            return {
+              ...state,
+              isPosting: false,
+            };
+          }
+          case "POST_COMMENT_FAILURE": {
+            return {
+              ...state,
+              isPosting: false,
+              errorMessage: action.payload,
+            };
+          }
+          case "COMMENT_DELETED": {
+            const article = state.article;
+            const comment = action.payload;
+            const index = article.comments.findIndex((c) => comment._id === c._id);
+            if (index !== -1) {
+              article.comments.splice(index, 1);
+            }
+    
+            return {
+              ...state,
+            };
+          }
+          case "COMMENT_UPDATED": {
+            const article = state.article;
+            const comment = action.payload;
+            //Finding the index of the comment
+            const index = article.comments.findIndex(c => comment._id === c._id);
+            if (index !== -1) {
+                //Gets the index and replaces it(1) with the new comment
+              article.comments.splice(index, 1 ,comment);
+            }
+    
+            return {
+              ...state,
+            };
+          }
+          default: {
             return state;
+          }
         }
-    }
 };
 
 const Show = () => {
@@ -47,6 +103,55 @@ const Show = () => {
     const authContext = React.useContext(AuthContext);
 
     const [state, dispatch] = React.useReducer(reducer, initialState);
+
+    //Keeps track of what is in the text field
+    const new_comment = React.useRef();
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+  
+        dispatch({
+          type: "POST_COMMENT_REQUEST",
+        });
+        const comment = {
+          body: new_comment.current.value,
+        };
+  
+        fetch("http://localhost:8000/articles/" + id + "/comments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${authContext.state.token}`,
+          },
+          body: JSON.stringify(comment),
+        })
+          .then((res) => res.json())
+          .then((response) => {
+            new_comment.current.value = "";
+            dispatch({
+              type: "POST_COMMENT_SUCCESS",
+              payload: response
+            })
+          })
+          .catch((error) => {
+            dispatch({
+              type: "POST_COMMENT_FAILURE",
+            });
+          });
+      }
+      const onCommentUpdated =(comment) =>{
+          dispatch({
+              type:"COMMENT_UPDATED",
+              payload: comment
+          });
+      };
+      const onCommentDeleted = (comment) => {
+          dispatch({
+              type: "COMMENT_DELETED",
+              payload: comment
+          });
+       };
 
     React.useEffect(() => {
         dispatch({
@@ -132,17 +237,55 @@ const Show = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {article.comments.map(comment => (
-                                <tr key={comment._id}>
-                                    <td>{comment.author.username}</td>
-                                    <td>{comment.body}</td>
-                                    <td>{comment.updatedAt}</td>
-                                </tr>
-                            ))}
-                        </tbody>
+                    {article.comments.map((comment) => (
+                      <tr key={comment._id}>
+                        <td>{comment.author.username}</td>
+                        <td>{comment.body}</td>
+                        <td>{comment.updatedAt}</td>
+                        <td>
+                          {authContext.state.user._id ===
+                            comment.author._id && (
+                            <>
+                              <EditCommentModal
+                                article={article}
+                                comment={comment}
+                                onCommentUpdated={onCommentUpdated}
+                              />
+                              <DeleteCommentModal
+                                article={article}
+                                comment={comment}
+                                onCommentDeleted={onCommentDeleted}
+                              />
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                     </table>
                 </>
                 }
+                <Form onSubmit={handleSubmit}>
+              {state.errorMessage && (
+                <Alert variant="danger">{state.errorMessage}</Alert>
+              )}
+              <Form.Group controlId="comment">
+                <Form.Label>Comment</Form.Label>
+                <Form.Control
+                  required
+                  name="comment"
+                  type="text"
+                  ref={new_comment}
+                />
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={state.isPosting}
+                >
+                  Post
+                </Button>
+              </Form.Group>
+            </Form>
             </>
             }
     </>

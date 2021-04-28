@@ -27,6 +27,7 @@ function issueJWT(user) {
     iat: Date.now()
   };
 
+  //Gets token , sends to website(JWT.io) and checks if t is a valid token 
   const signedToken = jsonwebtoken.sign(payload, privateKey, { expiresIn: expiresIn, algorithm: 'RS256' });
 
   return {
